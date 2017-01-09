@@ -1,12 +1,15 @@
 ! compile: gfortran -o octopus_analyzer octopus_analyzer_new2.f90
 ! progam reads line format geometry and transforms it to normal XYZ file 
 ! energies are extracted and related to the first point to eV units
+<<<<<<< HEAD
 ! argon l$ll
 <<<<<<< HEAD
 ! commit
 =======
 ! selen
 >>>>>>> 3c2989369c5f564e8acc4177c69c5ddd3f5c9e57
+=======
+>>>>>>> f851fd62ba6607cd3ad11e407ebc8ee4d1c02091
 program octopus_analyze
   implicit none
   INTEGER, external :: Factorial
