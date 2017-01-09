@@ -2,7 +2,11 @@
 ! progam reads line format geometry and transforms it to normal XYZ file 
 ! energies are extracted and related to the first point to eV units
 ! argon l$ll
+<<<<<<< HEAD
 ! commit
+=======
+! selen
+>>>>>>> 3c2989369c5f564e8acc4177c69c5ddd3f5c9e57
 program octopus_analyze
   implicit none
   INTEGER, external :: Factorial
