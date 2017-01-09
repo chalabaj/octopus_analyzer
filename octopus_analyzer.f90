@@ -4,6 +4,7 @@
 ! git add
 ! git push
 ! git commit
+! neon 
 program octopus_analyze
   implicit none
   INTEGER, external :: Factorial
