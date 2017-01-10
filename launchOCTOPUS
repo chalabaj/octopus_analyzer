@@ -1,0 +1,61 @@
+#!/bin/bash
+function PrintHelp {
+   echo " "
+   echo "USAGE: 'launchOCTOPUS input.com nproc' "
+   exit 1
+}
+
+if [[ $# -lt "2" ]]; then
+   echo "Not enough parameters."
+   PrintHelp
+fi
+
+
+input=$1
+nprocs=$2
+
+#cluter
+cluster=$(uname -a | awk {'print $2'})
+
+if [ "$cluster" = "as67-1" ] ;then
+   queue='sq-8-16'
+elif [ "$cluster" == "403-a324-01" ] ;then
+   queue='aq'
+elif [ "$cluster" = "403-as67-01" ] ;then
+   queue='nq'
+
+
+if [[ ! -e "$input" ]];then
+   echo "File $input does not exist. Exiting."
+   PrintHelp
+fi
+
+PWD=$(pwd)
+
+# Automatically determine number of processors
+
+cat > r.$input << EOF
+#!/bin/bash
+
+#$ -pe mpi $nprocs
+#$ -cwd
+#$ -e .
+#$ -o .
+#$ -q nq
+
+source $octopuslibs
+export OMP_NUM_THREADS=1
+
+cp $input inp
+mpirun -np ${NSLOTS} octopus >$method.out
+
+EOF
+
+
+echo "Launching OCTOPUS 6.0 job."
+echo "$nproc proccesors will be used."
+
+
+echo "qsub -cwd -q $queue r.$input"
+qsub -cwd -q $queue $nproc r.$input
+
