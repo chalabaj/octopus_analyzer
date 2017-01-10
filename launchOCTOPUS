@@ -1,7 +1,7 @@
 #!/bin/bash
 function PrintHelp {
    echo " "
-   echo "USAGE: 'launchOCTOPUS input.com nproc' "
+   echo "USAGE: 'launchOCTOPUS inputfile nproc' "
    exit 1
 }
 
@@ -10,11 +10,21 @@ if [[ $# -lt "2" ]]; then
    PrintHelp
 fi
 
-
 input=$1
-nprocs=$2
+name=`echo "$input" | cut -d'.' -f1` #namefile before extenson
+if [[ ! -e "$input" ]];then
+   echo "File $input does not exist. Exiting."
+   PrintHelp
+fi
 
-#cluter
+nproc=$2
+if ! [[ $nproc =~ ^[1-9]+$ ]] ; then
+   echo "error: Nproc is not an integer number" 
+   PrintHelp
+fi
+
+
+#which queue r
 cluster=$(uname -a | awk {'print $2'})
 
 if [ "$cluster" = "as67-1" ] ;then
@@ -23,39 +33,38 @@ elif [ "$cluster" == "403-a324-01" ] ;then
    queue='aq'
 elif [ "$cluster" = "403-as67-01" ] ;then
    queue='nq'
-
-
-if [[ ! -e "$input" ]];then
-   echo "File $input does not exist. Exiting."
-   PrintHelp
 fi
 
-PWD=$(pwd)
+export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
 
-# Automatically determine number of processors
-
-cat > r.$input << EOF
+cat > r.$name << EOF
 #!/bin/bash
+source $octopuslibs
+cp $input inp
 
-#$ -pe mpi $nprocs
+#$ -V
 #$ -cwd
 #$ -e .
 #$ -o .
-#$ -q nq
-
-source $octopuslibs
-export OMP_NUM_THREADS=1
-
-cp $input inp
-mpirun -np ${NSLOTS} octopus >$method.out
 
 EOF
 
+if [[ $nproc -gt "1" ]]; then
+cat >> r.$name  << EOF  
+#$ -pe mpi $nproc
+export OMP_NUM_THREADS=1  
+mpirun -np ${NSLOTS} octopus >& $name.out
+EOF
+else 
+cat >> r.$name << EOF
+octopus >& $name.out
+EOF
+fi
 
-echo "Launching OCTOPUS 6.0 job."
+echo "Launching OCTOPUS 6.0 job for $input."
 echo "$nproc proccesors will be used."
-
-
 echo "qsub -cwd -q $queue r.$input"
-qsub -cwd -q $queue $nproc r.$input
+echo "Results are stored to $name.out"
+
+qsub -cwd -q $queue r.$name
 
