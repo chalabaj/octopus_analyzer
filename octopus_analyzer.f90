@@ -1,4 +1,4 @@
-! compile: gfortran -o octopus_analyzer octopus_analyzer_new2.f90
+! compile: gfortran -o octopus_analyzer octopus_analyzer.f90
 ! progam reads line format geometry and transforms it to normal XYZ file 
 ! energies are extracted and related to the first point to eV units
 program octopus_analyze
