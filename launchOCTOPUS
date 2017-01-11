@@ -48,23 +48,23 @@ cp $input inp
 #$ -e .
 EOF
 
-echo "Launching OCTOPUS 6.0 job for $input."
 
 #parallelization
 if [[ $nproc -gt "1" ]]; then
 cat >> r.$name  << EOF  
 #$ -pe mpi $nproc
+
 export OMP_NUM_THREADS=1  
-mpirun -np ${NSLOTS} octopus > $name.out
+mpirun -np \${NSLOTS} octopus > $name.out
 EOF
-echo "$nproc proccesors will be used via mpirun parallelization."
 else 
 cat >> r.$name << EOF
 octopus > $name.out
 EOF
-echo "$nproc proccesors will be used via serial version."
 fi
 
+echo "Launching OCTOPUS 6.0 job for $input."
+echo "$nproc proccesors will be used."
 echo "Results will be stored to $name.out"
 echo "qsub -cwd -q $queue r.$name"
 echo "-----------------------------------------"
