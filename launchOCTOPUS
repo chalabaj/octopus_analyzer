@@ -11,7 +11,7 @@ if [[ $# -lt "2" ]]; then
 fi
 
 input=$1
-name=`echo "$input" | cut -d'.' -f1` #namefile before extenson
+name=`echo "$input" | cut -d'.' -f1` #namefile without extenson
 if [[ ! -e "$input" ]];then
    echo "File $input does not exist. Exiting."
    PrintHelp
@@ -23,8 +23,7 @@ if ! [[ $nproc =~ ^[1-9]+$ ]] ; then
    PrintHelp
 fi
 
-
-#which queue r
+#which queue regarding current cluster
 cluster=$(uname -a | awk {'print $2'})
 
 if [ "$cluster" = "as67-1" ] ;then
@@ -35,36 +34,41 @@ elif [ "$cluster" = "403-as67-01" ] ;then
    queue='nq'
 fi
 
+#libraries used for OCTOPUS compilation, setting environment -> source
 export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
 
+#octopus requires inp file -> cp
 cat > r.$name << EOF
 #!/bin/bash
 source $octopuslibs
 cp $input inp
 
+
 #$ -V
 #$ -cwd
 #$ -e .
-#$ -o .
+echo ${JOB_ID} > 1
+echo $JOB_ID > 2
 
 EOF
 
+
+#parallelization
 if [[ $nproc -gt "1" ]]; then
 cat >> r.$name  << EOF  
 #$ -pe mpi $nproc
 export OMP_NUM_THREADS=1  
-mpirun -np ${NSLOTS} octopus >& $name.out
+mpirun -np ${NSLOTS} octopus > $name.out
 EOF
 else 
 cat >> r.$name << EOF
-octopus >& $name.out
+octopus > $name.out
 EOF
 fi
 
 echo "Launching OCTOPUS 6.0 job for $input."
 echo "$nproc proccesors will be used."
 echo "qsub -cwd -q $queue r.$input"
-echo "Results are stored to $name.out"
+echo "Results will be stored to $name.out"
 
 qsub -cwd -q $queue r.$name
-
