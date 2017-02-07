@@ -3,10 +3,10 @@
 ! energies are extracted and related to the first point to eV units
 program octopus_analyze
   implicit none
-	INTEGER a,b,i,j,k,l,nlines,nlines_corr,nlines_en,nlines_en_corr,n_folder,step,hh
+	INTEGER a,b,i,j,k,l,nlines,nlines_corr,nlines_en,nlines_en_corr,n_folder,step
   INTEGER at,i_atom,Natoms,Ncoors_in_line,atom,Ndists_tot,Ndists_req,i_bond,iost,k_bond
   
-  INTEGER h_o1,h_o2,freeH,freeH_coor(:)                                                               ! water dimer analysis variables
+  INTEGER hh,h_o1,h_o2,Ndiss_H,diss_H_at(:),h1,h2                                                              ! water dimer analysis variables
   
 	REAL*8, allocatable           :: x(:),y(:),z(:),i_coor(:),i_dist(:),i_dist_req(:),dist(:,:)         ! bond analysis variables
 	REAL*8, allocatable           :: e_tot(:),ekin_ions(:),e_ion_ion(:),e_electronic(:),e_sum(:)        ! energy analysis variables
@@ -184,28 +184,52 @@ program octopus_analyze
         end do
 
 ! WAT DIM ANALYSIS at each timestep
-! freeH dissociated H atoms without bond to oxzgen 
-! h_o1 h_o2 number of hydrgen atoms on each oxygen   
+! diss_H - dissociated H atoms, if diss_H > 2 check for molecular hydrogen 
+! h_o1 h_o2 number of hydrogen atoms on each oxygen   
+! channels: 
+! 1 H2O...H2O bonded
+! 2 H2O+H2O disscociated
+! 3 PT H3O...OH bonded
+! 3 PT H3O+OH  dissociated
+! 5
         h_o1 = 0
         h_o2 = 0
-        freeH = 0
-        allocate ( freeH_coor(4) )
+        Ndiss_H = 0
+        diss_molH = 0
+        allocate ( diss_H_at(4) )
         
         do hh=3,Natoms,1
-          if (dist(1,hh).gt.2.AND.dist(2,hh).gt.2) then
-            freeH = freeH + 1
-            freeH_coor(freeH) = hh
-          else if (dist(1,hh).lt.dist(2,hh).AND.dist(1,hh).lt.1.5) then
+          if ( dist(1,hh).gt.3.AND.dist(2,hh).gt.3 ) then
+            Ndiss_H = Ndiss_H + 1
+            diss_H_at(Ndiss_H) = hh          ! which H is dissociated
+          else if ( dist(1,hh).lt.dist(2,hh).AND.dist(1,hh).lt.1.4 ) then   ! if not dissociated then where the hydrogen is? O1 or O2
  	           h_o1=h_o1+1
-          else if (dist(2,hh).lt.dist(1,hh).AND.dist(2,hh).lt.1.5) then
+          else if ( dist(2,hh).lt.dist(1,hh).AND.dist(2,hh).lt.1.4 ) then
              h_o2=h_o2+1
           end if
         end do
-        if ()
         
+        if ( Ndiss_H.GE.2 ) then         
+          do h1=1,Ndiss_H,1
+            do h2=h1+1,Ndiss_H,1
+               if ( dist(diss_H_at(h1),diss_H_at(h2)).le.1.5 ) then
+                diss_molH = diss_molH +1
+               end if
+             end do
+           end do
         end if
+! dimer break up
+        if ( dist(1,2).le.4)then
+         if (h_o1.eq.2.AND.h_o2.eq.2) then
+         channel =
+         end if
+        end if 
+! molecular hydrogen        
 
-        deallocate ( freeH_coor ) ! next geometry starts from begining
+         
+        deallocate ( diss_H_at ) ! next geometry starts from begining
+        
+!-------------------cluster analysis done ------------------------------------------        
         if ( i == 1 ) then
            write(102,*) '#Bond are in Angstroem and time in femtoseconds'
            write(102,*) '#Time i-th bond: Atom1-Atom2: ',(bonds(k_bond),k_bond=1,Ndists_tot)
