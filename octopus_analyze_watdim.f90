@@ -5,9 +5,10 @@
 program octopus_analyze
   implicit none
 	INTEGER a,b,i,j,k,l,nlines,nlines_corr,nlines_en,nlines_en_corr,n_folder,step
-  INTEGER at,i_atom,Natoms,Ncoors_in_line,atom,Ndists_tot,Ndists_req,i_bond,iost,k_bond
+  INTEGER at,i_atom,Natoms,Ncoors_in_line,atom,Ndists_tot,Ndists_req,i_bond,iost,k_bond,movie_step
   
-  INTEGER hh,h_o1,h_o2,Ndiss_H,diss_H_at(:),h1,h2,channel                              ! water dimer analysis variables
+  INTEGER                       :: hh,h_o1,h_o2,Ndiss_H,h1,h2,channel,diss_molH                  ! water dimer analysis variables
+  INTEGER, allocatable          :: diss_H_at(:)
   
 	REAL*8, allocatable           :: x(:),y(:),z(:),i_coor(:),i_dist(:),i_dist_req(:),dist(:,:)         ! bond analysis variables
 	REAL*8, allocatable           :: e_tot(:),ekin_ions(:),e_ion_ion(:),e_electronic(:),e_sum(:)        ! energy analysis variables
@@ -41,6 +42,9 @@ program octopus_analyze
 	        read(arg,'(A)')path(j)
       end do
   end if 
+    
+  write(*,*)'How often print geometry to movie file?'
+  read(*, *, IOSTAT=iost)movie_step
  
   write(*,*)'How many bonds?'
   read(*, *, IOSTAT=iost)Ndists_req
@@ -141,12 +145,14 @@ program octopus_analyze
       open(104,file=outputname2,status='REPLACE') !MOVIE.xyz
       open(111,file=outputname5,status='REPLACE') !requested bonds only  
       open(103,file=path2(j),status='OLD')        !
+      open(112,file='testcluster.dat',status='REPLACE') !cluster analysis result
       read(103,*)
       read(103,*)
       read(103,*)
       read(103,*)
       read(103,*)
-
+      
+      
       do i=1,nlines_corr,1                                               !main loop for reading and ANALYSING GEOMETRY
         read(103,*)step,time,(i_coor(b),b=1,Ncoors_in_line)                  
         time=time*au_fs
@@ -160,13 +166,20 @@ program octopus_analyze
         i_atom=i_atom+1
         end do         
  
-! MOVIE       
-       write(104,*)Natoms
-       write(104,*)'Step:',Step,'Time (fs):',time                       !heading for each step in movie
+! MOVIE
+              
+
         
         k_bond=1
         do l=1,Natoms,1
-            write(104,*)names(l),x(l),y(l),z(l) ! writing XYZ to movie file
+            if (mod(i,movie_step).eq.0) then  ! each i-th step write geometry to movie
+              if (l.EQ.1)then
+                 write(104,*)Natoms
+                 write(104,*)'Step:',Step,'Time (fs):',time                       !heading for each step in movie
+              end if 
+              write(104,*)names(l),x(l),y(l),z(l) ! writing XYZ to movie file
+            end if
+            
             do k=l+1,Natoms               ! distance matrix
                   x_dist=(x(l)-x(k))**2
                   y_dist=(y(l)-y(k))**2
@@ -191,8 +204,21 @@ program octopus_analyze
 ! 1 H2O...H2O bonded
 ! 2 H2O+H2O disscociated
 ! 3 PT H3O...OH bonded
-! 3 PT H3O+OH  dissociated
-! 5 H diss H20 OH
+! 4 PT H3O+OH  dissociated
+! 5 H diss H20...OH bonded
+! 6 H diss H20+OH dissociated
+! 7 mol H2 diss, OH...OH bonded
+! 8 mol H2 diss, 2x OH dissociated
+! 9 mol H2 diss, 2x OH dissociated 
+! 7  2x at H diss,  O + H2O dissociated 
+! 8  2x at H diss,  O...H2O bonded  
+! 9  2x at H2 diss, 2x OH dissociated  
+! 10 2x at H2 diss, OH...OH bonded
+! 11 1 mol H2 diss, O + H2O dissociated 
+! 12 1 mol H2 diss, O...H2O bonded 
+! 13 1 mol H2 diss, 2x OH dissociated  
+! 14 1 mol H2 diss, OH...OH bonded
+
         h_o1 = 0
         h_o2 = 0
         Ndiss_H = 0
@@ -204,53 +230,84 @@ program octopus_analyze
           if ( dist(1,hh).gt.3.AND.dist(2,hh).gt.3 ) then
             Ndiss_H = Ndiss_H + 1
             diss_H_at(Ndiss_H) = hh          ! which H(hh) is dissociated
-          else if ( dist(1,hh).lt.dist(2,hh).AND.dist(1,hh).lt.1.4 ) then   ! if not dissociated then where the hydrogen is? O1 or O2
+          else if ( dist(1,hh).lt.dist(2,hh).AND.dist(1,hh).lt.2 ) then   ! if not dissociated then where the hydrogen is? O1 or O2
  	           h_o1=h_o1+1
-          else if ( dist(2,hh).lt.dist(1,hh).AND.dist(2,hh).lt.1.4 ) then
+          else if ( dist(2,hh).lt.dist(1,hh).AND.dist(2,hh).lt.2 ) then
              h_o2=h_o2+1
           end if
         end do
 
-          
         if ( Ndiss_H.EQ.0 ) then 
-! 2 H2O+H2O disscociated  // 1 H2O...H2O bonded     
-          if ( h_o1.eq.2.AND.h_o2.eq.2 ) then
+! NO PT or H diss  
+           if ( h_o1.eq.2.AND.h_o2.eq.2 ) then
                 if ( dist(1,2).gt.4.0 ) then
-                  channel = 2
+                  channel = 2 ! 2 H2O+H2O disscociated 
                 else
-                  channel = 1 
+                  channel = 1 ! 1 H2O...H2O bonded 
                 end if
-          GOTO 5
-! 3 PT H3O...OH bonded   
-          else if ( h_o1.eq.3.OR.h_o2.eq.3 ) then
+           else if ( h_o1.eq.3.OR.h_o2.eq.3 ) then
                 if ( dist(1,2).gt.4.0 ) then
-                  channel = 3   ! 3 PT H3O+OH  dissociated
+                  channel = 4   ! 4 PT H3O+OH  dissociated
                 else
-                  channel = 4
+                  channel = 3   ! 3 PT H3O...OH bonded  
                 end if 
-          end if 
+           end if 
                   
         else if ( Ndiss_H.EQ.1 ) then 
-        XXX
+
+                if ( dist(1,2).gt.4.0 ) then
+                  channel = 6   ! 6 H diss, H20+OH dissociated
+                else
+                  channel = 5   ! 5 H diss, H20...OH bonded 
+                end if 
+                               
         else if ( Ndiss_H.GE.2 ) then         
-          do h1=1,Ndiss_H,1
-            do h2=h1+1,Ndiss_H,1
-               if ( dist(diss_H_at(h1),diss_H_at(h2)).le.1.5 ) then
-                diss_molH = diss_molH + 1
-               end if
-             end do
-           end do
+                do h1=1,Ndiss_H,1
+                    do h2=h1+1,Ndiss_H,1
+                       if ( dist(diss_H_at(h1),diss_H_at(h2)).le.1.5 ) then
+                          diss_molH = diss_molH + 1
+                       end if
+                    end do
+                 end do
+                 if ( diss_molH.eq.0 )then ! not mol H2 but 2x H
+                     if ( h_o1.eq.0.OR.h_o2.eq.0 ) then
+                         if ( dist(1,2).gt.4.0 ) then
+                            channel = 7     ! 7 2x at H diss, O + H2O dissociated 
+                         else   
+                            channel = 8     ! 8 2x at H diss, O...H2O bonded 
+                         end if
+                     else if ( h_o1.eq.1.AND.h_o2.eq.1 ) then
+                         if ( dist(1,2).gt.4.0 ) then
+                            channel = 9     ! 9 2x at H2 diss, 2x OH dissociated  
+                         else
+                            channel = 10    ! 10 2x at H2 diss, OH...OH bonded
+                         end if 
+                     end if   
+                 else if ( diss_molH.eq.1 )then
+                     if ( h_o1.eq.0.OR.h_o2.eq.0 ) then
+                         if ( dist(1,2).gt.4.0 ) then
+                            channel = 11     ! 11 1 mol H2 diss, O + H2O dissociated 
+                         else   
+                            channel = 12     ! 12 1 mol H2 diss, O...H2O bonded 
+                         end if
+                     else if ( h_o1.eq.1.AND.h_o2.eq.1 ) then
+                         if ( dist(1,2).gt.4.0 ) then
+                            channel = 13     ! 13 mol H2 diss, 2x OH dissociated  
+                         else
+                            channel = 14    ! 14 mol H2 diss, OH...OH bonded
+                         end if 
+                     end if      
+                 end if
+          
         end if
 
+        write(112,5)time,channel
+5       format(1F16.8,I5.2)
 
-        end if
-
-! molecular hydrogen        
-
-5         
         deallocate ( diss_H_at ) ! next geometry starts from begining
         
-!-------------------cluster analysis done ------------------------------------------        
+!-------------------cluster analysis done ------------------------------------------  
+      
         if ( i == 1 ) then
            write(102,*) '#Bond are in Angstroem and time in femtoseconds'
            write(102,*) '#Time i-th bond: Atom1-Atom2: ',(bonds(k_bond),k_bond=1,Ndists_tot)
@@ -269,6 +326,7 @@ program octopus_analyze
 	  close(103)
 	  close(104)
     close(111)
+    close(112)
 !ENERGY READING-------------------------------------------------------------------------------------------------------------
 	
 	  command3='wc -l <' // trim(path3(j)) // '> nlines_en.txt'
