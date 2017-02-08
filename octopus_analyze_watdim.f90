@@ -167,9 +167,6 @@ program octopus_analyze
         end do         
  
 ! MOVIE
-              
-
-        
         k_bond=1
         do l=1,Natoms,1
             if (mod(i,movie_step).eq.0) then  ! each i-th step write geometry to movie
@@ -300,9 +297,9 @@ program octopus_analyze
                  end if
           
         end if
-
-        write(112,5)time,channel
-5       format(1F16.8,I5.2)
+        write(112,*) '#Time,  Channel, xH-O1, xH-O1, diss H, diss mol H2'
+        write(112,5)time,channel,h_o1,h_o2,Ndiss_H,diss_molH
+5       format(1F16.8,5I5.2)
 
         deallocate ( diss_H_at ) ! next geometry starts from begining
         
