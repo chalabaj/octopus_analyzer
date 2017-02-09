@@ -124,7 +124,9 @@
                          end if 
                      end if      
                  end if
-          
+                 
+        else if ( Ndiss_H.Gt.2 ) then
+         channel = 10000  ! too much to think about all the channels
         end if
         dissH = Ndiss_H
         dissmolH = diss_molH
