@@ -33,13 +33,12 @@
 ! 4 PT H3O+OH  dissociated
 ! 5 H diss H20...OH bonded
 ! 6 H diss H20+OH dissociated
-! 7 mol H2 diss, OH...OH bonded
-! 8 mol H2 diss, 2x OH dissociated
-! 9 mol H2 diss, 2x OH dissociated 
+
 ! 7  2x at H diss,  O + H2O dissociated 
 ! 8  2x at H diss,  O...H2O bonded  
 ! 9  2x at H2 diss, 2x OH dissociated  
 ! 10 2x at H2 diss, OH...OH bondedg
+
 ! 11 1 mol H2 diss, O + H2O dissociated 
 ! 12 1 mol H2 diss, O...H2O bonded 
 ! 13 1 mol H2 diss, 2x OH dissociated  
@@ -86,6 +85,14 @@
                 else
                   channel = 5   ! 5 H diss, H20...OH bonded 
                 end if 
+                
+                if ( h_o1.eq.3.OR.h_o2.eq.3 ) then
+                if ( dist(1,2).gt.4.0 ) then
+                  channel = 15   ! 15 PT H3O+O + H  dissociated TEST
+                else
+                  channel = 16   ! 16 PT H3O...O + H bonded  TEST
+                end if 
+           end if 
                                
         else if ( Ndiss_H.GE.2 ) then         
                 do h1=1,Ndiss_H,1
@@ -133,7 +140,7 @@
         ho1 = h_o1
         ho2 = h_o2
         
-        print *, channel,h_o1,h_o2,Ndiss_H,diss_molH
+        print *, channel,h_o1,h_o2,dist(1,2),Ndiss_H,diss_molH
 
         deallocate ( diss_H_at ) ! next geometry starts from begining
         

@@ -44,11 +44,11 @@
         OPEN(101,file='nlines.txt') 
         READ(101,*)nlines 
         close(101)
-        CALL system('rm nlines.txt')
+ !       CALL system('rm nlines.txt')
     
         open(110,file=inputfile(j),status='OLD')  
         open(111,file=outputfile(j),status='REPLACE') 
-        write(111,*) '#Time,         Channel,  xH-O1, xH-O1, diss H, diss mol H2'
+        write(111,*) '#Time,         Channel,  O-O dist,       xH-O1, xH-O1, diss H, diss mol H2'
         read(110,*)Natoms
         REWIND(110) 
         allocate( x(Natoms) )
@@ -63,7 +63,7 @@
 
 
            read(110,*)Natoms
-           read(110,*)tt,tt,tt,tt,time
+           read(110,*)tt,tt,tt,tt,tt,time  !for testing geometrie added tt, removie for movie so it is possible to read time
            do i_atom=1,Natoms,1
                read(110,*)names(i_atom),x(i_atom),y(i_atom),z(i_atom) 
            end do
@@ -79,8 +79,8 @@
            
            call channels(dist,Natoms,channel,dissH,dissmolH,ho1,ho2)
 
-            write(111,5)time,channel,ho1,ho2,dissH,dissmolH
-5           format(1F12.8,5I8.1) 
+            write(111,5)time,channel,dist(1,2),ho1,ho2,dissH,dissmolH
+5           format(1F12.8,1I8.1,1F16.8,4I8.1) 
         end do  
               
       close(110)
