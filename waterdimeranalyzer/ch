@@ -1,0 +1,14 @@
+cat channel2.xyz > allchannel.xyz
+cat channel3.* >> allchannel.xyz
+cat channel4.* >> allchannel.xyz
+cat channel5.* >> allchannel.xyz
+cat channel6.* >> allchannel.xyz
+cat channel7.* >> allchannel.xyz
+cat channel8.* >> allchannel.xyz
+cat channel9.* >> allchannel.xyz
+cat channel10.* >> allchannel.xyz
+cat channel11.* >> allchannel.xyz
+cat channel12.* >> allchannel.xyz
+cat channel13.* >> allchannel.xyz
+cat channel14.* >> allchannel.xyz
+

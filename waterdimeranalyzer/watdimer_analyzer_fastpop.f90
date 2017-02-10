@@ -4,12 +4,17 @@
  IMPLICIT NONE
 
  REAL*8, allocatable      :: x(:),y(:),z(:),dist(:,:)  
- REAL*8                   :: x_dist,y_dist,z_dist,time
+ REAL*8                   :: x_dist,y_dist,z_dist,time,OOdist,tim
  INTEGER                  :: igeom,Ngeoms,Natoms,i_atom,Nfiles,nlines,channel
  INTEGER                  :: l,k,j,step,Nargs  ! loops
- CHARACTER(50)            :: inputfile(1000),arg,outputfile(1000)
+ CHARACTER(50)            :: inputfile(1000),arg
+ CHARACTER=               :: outputfile = 'data_all.dat'
  CHARACTER(100)           :: tt,path(1000),command
  CHARACTER, allocatable   :: names(:)
+ 
+ INTEGER                  :: outlines,istep,maxistep !maxistep is max step in output file
+ INTEGER,parameter        :: Nchannels = 16, Maxstep = 400000
+ REAL*8,allocatable       :: channel_pop(:,:),times()
  LOGICAL                  :: f_ex1
  CHARACTER(2)             :: mode
  
@@ -32,10 +37,9 @@
           if ( f_ex1 .EQV. .FALSE. ) then
             call Print_help(2,path(j))
           end if
-          outputfile(j)='RESULTS-'//inputfile(j)
           j=j+1
       end do
-      
+   
 ! channel = 0  ! noreaction at the beginning
 
 !-----calling stastics----------------
@@ -43,11 +47,58 @@
  
  call get_command_argument(1, mode)
   if (mode.EQ.'-s') then
-    do j=1,Nfiles,1
-!      call all_trajs_stat(outputfile(j))
+    command='wc -l <' // outputfile // '> outlines.txt'
+    CALL system(command)
+    OPEN(113,file='outlines.txt') 
+    READ(113,*)outlines 
+    close(113)
+    CALL system('rm outlines.txt')
+
+! array allocation and filling it with zero population    
+    allocate ( channel_pop(Nchannels,Maxstep) ) 
+    allocate ( times(Maxstep) )   
+    
+    do channel=1,Nchannels,1
+     do step=1,Maxstep
+       channel_pop(Nchannels,Maxstep) = 0
+     end do
     end do
-  else if (mode.EQ.'-a')then
-    GOTO 11
+    
+    open(112,file=outputfile,status='OLD') 
+     
+     totpop(step) = 0
+     step = 0
+     channel = 1
+     maxistep = 1
+     do istep=1,outlines,1  !through entire file
+        read(112,5)tim,step,channel,OOdist,ho1,ho2,dissH,dissmolH 
+        channel_pop(channel,step)=channel_pop(channel,step)+1 
+        times(step) = tim
+        if (step.GT.maxistep)then
+          maxistep = step 
+        end if 
+     end do
+     
+     close(112)
+       
+     do step=1,maxistep,1  !only through maxistep since simualations possible didnt finished
+      
+       do channel=1,Nchannels,1
+        totpop(step)= totpop(step)+channel_pop(channel,step))
+       end do 
+       
+       ! after sum need normed population, cant put upward since i cant do the norm pop before sum
+       do channel=1,Nchannels,1 
+        channel_pop(channel,step) = channel_pop(channel,step)/totpop(step)
+       end do
+     
+       write(114,6)times(step),(channel_pop(channel,step),channel=1,Nchannels)
+6      format(17F16.8)
+
+     end do
+
+ 
+  else if (mode.EQ.'-a')GOTO 11
   end if
   
 !Geometry------------------------------------------------------------- 
@@ -62,7 +113,7 @@
  !       CALL system('rm nlines.txt')
     
         open(110,file=inputfile(j),status='OLD')  
-        open(111,file=outputfile(j),status='REPLACE') 
+        open(111,file=outputfile,status='OLD',access='append') 
         write(111,*) '#Time,   Step,      Channel,  O-O dist,       xH-O1, xH-O1, diss H, diss mol H2'
         read(110,*)Natoms
         REWIND(110) 
