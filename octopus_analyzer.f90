@@ -12,26 +12,22 @@ program octopus_analyze
   REAL*8, allocatable           :: ev_tot(:),evkin_ions(:),ev_ion_ion(:),ev_electronic(:),ev_sum(:)
   INTEGER, allocatable          :: at1(:),at2(:)
   CHARACTER(len=2),allocatable  :: names(:)
-  CHARACTER(len=20),allocatable    :: bonds(:)
+  CHARACTER(len=20),allocatable :: bonds(:)
   
   REAL*8           :: x_dist,y_dist,z_dist
   REAL*8           :: vec1x,vec1y,vec1z,angle,vec2x,vec2y,vec2z,time
 	CHARACTER(100)   :: filename,filename3,filename4,outputname,outputname2,outputname3,outputname4,outputname5,arg
-	CHARACTER(200)   :: path(20),path2(20),path3(20),path4(20)
+	CHARACTER(200)   :: path(100),path2(100),path3(100),path4(100)
 	CHARACTER(200)   :: command,command2,command3,command4,command5a,command5b,command6
 
   CHARACTER(len=5):: str,str2,str3
 	REAL*8,parameter :: angsrom=0.52917720859, ev=27.21138602,pi=3.14159265,au_fs=2.418884326505E-2  ! *E-15 = time is in femtoseconds
-  LOGICAL(1)          :: f_ex1,f_ex2,f_ex3
+  LOGICAL(1)       :: f_ex1,f_ex2,f_ex3
 
 !------------------------------------------------------------------------------
   
   n_folder=command_argument_count()
   
-  if (n_folder .GT. 20 ) then
-    print *,'You can analyze only 20 folder at once'
-  STOP 1
-  end if
   
   if ( n_folder .EQ. 0) then
       write (*,*)'Please enter a name of a folder with coordinates and energy file:'
@@ -156,6 +152,7 @@ program octopus_analyze
         read(103,*)step,time,(i_coor(b),b=1,Ncoors_in_line)
         k_bond=1
         i_atom=1
+        time=time*au_fs
         do a=0,Ncoors_in_line-3,3
            x(i_atom)=i_coor(a+1)*angsrom
            y(i_atom)=i_coor(a+2)*angsrom
@@ -185,8 +182,6 @@ program octopus_analyze
                 end do
         end do
         
-        time=time*au_fs
-
         if ( i == 1 ) then
            write(102,*) '#Vazba At1-At2: ',(bonds(k_bond),k_bond=1,Ndists_tot)
            write(102,*) '#Bond are in Angström and and time in femtoseconds'
