@@ -1,3 +1,5 @@
+! gfortran -o watdim_analyzer  analysis.f90 watdimer_analyzer_fastpop.f90  -g -fcheck=all -Wall
+
  program  water_dimer_analysis
  USE ANALYSIS
  IMPLICIT NONE
@@ -29,16 +31,15 @@
  ! Error handling--------------------------------------------------------------
  Nargs=command_argument_count()
  call get_command_argument(1, mode)
- if (mode.EQ.'-oc'.OR.mode.EQ.'-sh') then
- if ( Nargs.LT.2 )then
-  call Print_help(1,'')
- end if 
- end if
+   if ( Nargs.LT.2 )then
+     call Print_help(1,'')
+   end if
+
 
 !Reading input files-----------------------------------------------------------
  j=2               ! j-th geometry
       do while (j.LE.Nargs)
-       call get_command_argument(j, arg)  ! first argument is operation mode
+       call get_command_argument(j, arg)  ! first argument is type of movie: octopus or SH
        read(arg,'(A)')inputfile(j)       
        INQUIRE(FILE =inputfile(j), EXIST=f_ex1)
        if ( f_ex1 .EQV. .FALSE. ) then
@@ -47,78 +48,10 @@
        j=j+1
       end do
 
-!-----calling stastics----------------
-
-  if (mode.EQ.'-st') then  !statistics, populations
-  GOTO 12
-  else if (mode.EQ.'-oc'.OR.mode.EQ.'-sh')then
-  GOTO 11   !movie analysis
-  end if
- 
-12  command='wc -l <' // outputfile // '> outlines.txt'
-    CALL system(command)
-    OPEN(113,file='outlines.txt') 
-    READ(113,*)outlines 
-    close(113)
-
-! array allocation and filling it with zero population    
-    allocate ( channel_pop(1:Nchannels,0:Maxstep) ) 
-    allocate ( times(0:Maxstep) )   
-    allocate ( totpop(0:Maxstep))
-!    channel_pop(0,0) = 0
-!    totpop(0) = 0
-    do channel=1,Nchannels,1
-     do step=0,Maxstep,1
-       channel_pop(Nchannels,step) = 0
-       totpop(step) = 0
-     end do
-    end do
-    
-    step = 0
-    channel = 1
-    maxistep = 1
-!-----------READING DATAALL    
-    open(112,file=outputfile,status='OLD')
-    read(112,*) !first line with comments 
-    do istep=1,outlines-1,1  !through entire file except first line
-        read(112,*)tim,step,channel,OOdist,ho1,ho2,dissH,dissmolH
-        channel_pop(channel,step)=channel_pop(channel,step)+1 
-        times(step) = tim
-        if (step.GT.maxistep)then
-          maxistep = step 
-        end if 
-    end do
-    close(112)
-    
-!-----------POPULATIONS      
-    open(114,file='RESULTSTRAJS.dat',status='REPLACE')        
-    write(114,*)'#times,  totpop,  channels....'
-     do step=0,maxistep,1  !only through maxistep since simualations possible didnt finished
-      
-       do channel=1,Nchannels,1
-        totpop(step)= totpop(step)+channel_pop(channel,step)
-       end do 
-       
-       ! after sum need normed population, cant put upward since i cant do the norm pop before sum
-       do channel=1,Nchannels,1 
-        channel_pop(channel,step) = channel_pop(channel,step)/totpop(step)*100 ! print %
-       end do
-!       write(114,6)times(step),totpop(step),(channel_pop(channel,step),channel=1,Nchannels)
-            
-       write(114,6)times(step),(channel_pop(channel,step),channel=1,Nchannels)
-6      format(18F16.8)
-
-     end do
-     close(114)
- 
-    deallocate ( channel_pop ) 
-    deallocate ( times )
-    STOP
-  
 !Geometry###################################################################### 
 !----------proces movie------------------------- 
  
-11 print *,'starting analysis for ',Nargs-1,' files.'
+   print *,'starting analysis for ',Nargs-1,' files.'
      
    open(111,file=outputfile,status='REPLACE',access='append') 
    write(111,*) '#Time,     Step,  Channel,   O-O dist,     xH-O1, xH-O1, diss H, diss mol H2'
@@ -188,7 +121,70 @@
         deallocate( names )
         deallocate( dist )   
   end do
-  STOP
+
+!-----calling stastics----------------
+   print *,'processing populations'
+   
+   command='wc -l <' // outputfile // '> outlines.txt'
+    CALL system(command)
+    OPEN(113,file='outlines.txt') 
+    READ(113,*)outlines 
+    close(113)
+
+! array allocation and filling it with zero population    
+    allocate ( channel_pop(1:Nchannels,0:Maxstep) ) 
+    allocate ( times(0:Maxstep) )   
+    allocate ( totpop(0:Maxstep))
+!    channel_pop(0,0) = 0
+!    totpop(0) = 0
+    do channel=1,Nchannels,1
+     do step=0,Maxstep,1
+       channel_pop(Nchannels,step) = 0
+       totpop(step) = 0
+     end do
+    end do
+    
+    step = 0
+    channel = 1
+    maxistep = 1
+!-----------READING DATAALL    
+    open(112,file=outputfile,status='OLD')
+    read(112,*) !first line with comments 
+    do istep=1,outlines-1,1  !through entire file except first line
+        read(112,*)tim,step,channel,OOdist,ho1,ho2,dissH,dissmolH
+        channel_pop(channel,step)=channel_pop(channel,step)+1 
+        times(step) = tim
+        if (step.GT.maxistep)then !setting maximum number of step for sumilation
+          maxistep = step 
+        end if 
+    end do
+    close(112)
+    
+!-----------POPULATIONS      
+    open(114,file='RESULTSTRAJS.dat',status='REPLACE')        
+    write(114,*)'#times,  totpop,  channels....'
+     do step=0,maxistep,1  !only through maxistep since simualations possible didnt finished
+      
+       do channel=1,Nchannels,1
+        totpop(step)= totpop(step)+channel_pop(channel,step)
+       end do 
+       
+       ! after sum need normed population, cant put upward since i cant do the norm pop before sum
+       do channel=1,Nchannels,1 
+        channel_pop(channel,step) = channel_pop(channel,step)/totpop(step)*100 ! print %
+       end do
+!       write(114,6)times(step),totpop(step),(channel_pop(channel,step),channel=1,Nchannels)
+            
+       write(114,6)times(step),(channel_pop(channel,step),channel=1,Nchannels)
+6      format(18F16.8)
+
+     end do
+     close(114)
+ 
+    deallocate ( channel_pop ) 
+    deallocate ( times )
+    STOP
+
  end program water_dimer_analysis
  
  
