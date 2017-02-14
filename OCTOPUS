@@ -1,0 +1,59 @@
+#!/bin/bash
+
+#$ -V -cwd
+
+# This is a sample script for launching ABIN simulations in cluster environments.
+# 1. Copy all data from CWD to the node's scratch. 
+#    (not copying folders except the interface folder, e.g G09)
+# 2. Launch ABIN.
+# 3. Copy data back (only newer files are copied!).
+# 4. Remove scratch directory. (if delscratch = true)
+
+
+#required libraries for OCTOPUS
+export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
+source $octopuslibs
+
+nproc=$1
+
+scratch=/scratch/${USER}
+export SCRATCH=${scratch}/${JOB_ID}
+echo SCRATCH > te
+delscratch=true
+
+if [[ -d $SCRATCH ]];then
+   echo "Job direcory $SCRDIR already exist!"
+   echo "Perhaps it's a leftover from some old job, you could probably delete it."
+   echo "Exiting..."
+   exit 1
+else
+   mkdir $SCRATCH
+fi
+
+cp -p * $SCRATCH/.
+
+cd $SCRDIR
+
+if [[ $nproc -gt "1" ]]; then
+#$ -pe mpi $nproc
+export OMP_NUM_THREADS=1  
+mpirun -np \${NSLOTS} octopus > $name.out
+else
+octopus > $name.out
+fi
+
+
+
+
+cp -pr * $KDE/.
+if [[ $? -ne "0" ]];then
+   echo "Error when copying the data from scratch back to the server."
+   echo "I will keep the directory $SCRDIR on node:"
+   uname -a
+   exit 1
+fi
+
+if [[ $delscratch -eq "true" ]];then
+   rm -r $JOBNAME
+fi
+
