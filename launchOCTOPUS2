@@ -38,23 +38,19 @@ elif [ "$cluster" = "403-as67-01" ]; then
    queue='nq'
 fi
 
-#required libraries for OCTOPUS
-export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
-
 
 #parallelization
 if [[ $nproc -gt "1" ]]; then
 cat > r.$name << EOF
 #!/bin/bash
-source $octopuslibs
+
 
 #$ -V
 #$ -cwd
 #$ -e .
 #$ -pe mpi $nproc
+OCTOPUS $nproc
 
-export OMP_NUM_THREADS=1  
-mpirun -np \${NSLOTS} octopus > $name.out
 EOF
   else 
 cat > r.$name << EOF
@@ -64,8 +60,8 @@ source $octopuslibs
 #$ -V
 #$ -cwd
 #$ -e .
+OCTOPUS $nproc
 
-octopus > $name.out
 EOF
 fi
 
