@@ -44,30 +44,32 @@ if [[ $nproc -gt "1" ]]; then
 cat > r.$name << EOF
 #!/bin/bash
 
-
 #$ -V
 #$ -cwd
 #$ -e .
-#$ -pe mpi $nproc
-OCTOPUS $nproc
+#$ -pe mpi $nproc 
+OCTOPUS $name
 
 EOF
+echo "Launching parallel OCTOPUS 6.0 job for $input using $nproc processors."
+echo "Results will be saved to $name.out."
+echo "qsub -cwd -V -q $queue -pe mpi $nproc r.$name"
+echo "-----------------------------------------"
+qsub -cwd -V -q $queue -pe mpi $nproc r.$name
+
   else 
 cat > r.$name << EOF
 #!/bin/bash
-source $octopuslibs
 
 #$ -V
 #$ -cwd
 #$ -e .
-OCTOPUS $nproc
-
+OCTOPUS $name
 EOF
-fi
-
 echo "Launching OCTOPUS 6.0 job for $input using $nproc processor(s)."
 echo "Results will be saved to $name.out."
 echo "qsub -cwd -q $queue r.$name"
 echo "-----------------------------------------"
+qsub -cwd -V -q $queue r.$name
+fi
 
-qsub -cwd -q $queue r.$name
