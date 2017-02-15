@@ -12,13 +12,12 @@ export basedir=$PWD
 export scrdir="/scratch/${USER}"
 export SCRATCH=$scrdir/${JOB_ID}
 
-echo 'Job ID in que: ' ${JOB_ID}         > $jobfile
-echo 'Job submitted by: ' ${USER}       >>  $jobfile
-echo 'Job is running at: '${HOSTNAME}   >>  $jobfile
-echo 'Folder on sratch: '${SCRATCH}     >>  $jobfile
-echo 'Base directory:' $basedir      >>  $jobfile
+echo  ${JOB_ID}         > $jobfile
+echo  ${USER}       >>  $jobfile
+echo  ${HOSTNAME}   >>  $jobfile
+echo  ${SCRATCH}     >>  $jobfile
+echo  $basedir      >>  $jobfile
 echo 'NSLOTS: '${NSLOTS}                >>  $jobfile   #NSLOTS
-echo 'Delete scratch after finished job:' $delscratch >> $jobfile
 
 
 if [[ -d $SCRATCH ]];then
@@ -33,8 +32,6 @@ fi
 
 cd $SCRATCH
  
-trap clean_scratch SIGUSR2  
-
 function clean_scratch {
    echo "Job stopped after qdel ${JOB_ID}">> $jobfile
    echo "Copying current data back to $basedir/">> $jobfile
@@ -43,6 +40,9 @@ function clean_scratch {
    rm -r $SCRATCH
    exit 1
 }
+trap clean_scratch SIGUSR2  #if qdel JOBID then copy current data to basedir
+
+
 
 #required libraries for OCTOPUS
 export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
@@ -55,7 +55,6 @@ mpirun -np ${NSLOTS} octopus > $name.out
 else
 octopus > $name.out
 fi
-
 
 cp -pr * $basedir/.
 
