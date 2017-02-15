@@ -5,8 +5,8 @@
 
 name=$1
 jobfile=$name.log
-delscratch='true'
-export homedir=$PWD
+delscratch="true"
+export basedir=$PWD
 
 
 export scrdir="/scratch/${USER}"
@@ -16,10 +16,10 @@ echo 'Job ID in que: ' ${JOB_ID}         > $jobfile
 echo 'Job submitted by: ' ${USER}       >>  $jobfile
 echo 'Job is running at: '${HOSTNAME}   >>  $jobfile
 echo 'Folder on sratch: '${SCRATCH}     >>  $jobfile
-echo 'Base directory:' $homedir      >>  $jobfile
+echo 'Base directory:' $basedir      >>  $jobfile
 echo 'NSLOTS: '${NSLOTS}                >>  $jobfile   #NSLOTS
 echo 'Delete scratch after finished job:' $delscratch >> $jobfile
-trap "qdel ${JOB_ID}" clean_scratch
+
 
 if [[ -d $SCRATCH ]];then
    echo "Job direcory $SCRDIR already exist!"
@@ -28,9 +28,22 @@ if [[ -d $SCRATCH ]];then
 else
    mkdir ${SCRATCH}
    cp -p * $SCRATCH/.
+
 fi
 
 cd $SCRATCH
+ 
+trap clean_scratch SIGUSR2  
+
+function clean_scratch {
+   echo "Job stopped after qdel ${JOB_ID}">> $jobfile
+   echo "Copying current data back to $basedir/">> $jobfile
+   cp -pr * $basedir/.
+   cd ../
+   rm -r $SCRATCH
+   exit 1
+}
+
 #required libraries for OCTOPUS
 export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
 source $octopuslibs
@@ -44,18 +57,11 @@ octopus > $name.out
 fi
 
 
-function clean_scratch {
-   echo "Job stopped after qdel ${JOB_ID}">>$jobfile
-   echo "Copying current data back to $homedir.">> $jobfile
-   cp -pr * $homedir/.
-   rm -r $SCRATCH
-   exit
-}
-
-cp -pr * $homedir/.
-
-if [[ $delscratch -eq "true" ]];then
-  rm -r $SCRATCH
-fi
+cp -pr * $basedir/.
 
 echo 'Normal termination of:' ${JOB_ID} >> $jobfile
+
+if [[ $delscratch -eq "true" ]];then
+  cd ../
+  rm -r $SCRATCH
+fi
