@@ -1,24 +1,21 @@
 #!/bin/bash
 
-#$ -V 
-#$ -cwd
+#$ -cwd -V
 
 name=$1
-jobfile=$name.log
+jobfile=job.log
 delscratch="true"
+
 export basedir=$PWD
-
-
 export scrdir="/scratch/${USER}"
 export SCRATCH=$scrdir/${JOB_ID}
 
-echo  ${JOB_ID}         > $jobfile
+echo  ${JOB_ID}     > $jobfile
 echo  ${USER}       >>  $jobfile
 echo  ${HOSTNAME}   >>  $jobfile
-echo  ${SCRATCH}     >>  $jobfile
+echo  ${SCRATCH}    >>  $jobfile
 echo  $basedir      >>  $jobfile
-echo 'NSLOTS: '${NSLOTS}                >>  $jobfile   #NSLOTS
-
+echo 'NSLOTS: '${NSLOTS} >>  $jobfile   #NSLOTS
 
 if [[ -d $SCRATCH ]];then
    echo "Job direcory $SCRDIR already exist!"
@@ -27,7 +24,7 @@ if [[ -d $SCRATCH ]];then
 else
    mkdir ${SCRATCH}
    cp -p * $SCRATCH/.
-
+   cp /home/chalabaj/skripty/octopus_analyzer/fetchoctopus.sh $basedir/.
 fi
 
 cd $SCRATCH
@@ -43,22 +40,14 @@ function clean_scratch {
 trap clean_scratch SIGUSR2  #if qdel JOBID then copy current data to basedir
 
 
-
-#required libraries for OCTOPUS
-export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
-source $octopuslibs
-
-if [[ $nproc -gt "1" ]]; then
-#$ -pe mpi $nproc
-export OMP_NUM_THREADS=1  
+if [[ ${NSLOTS} -gt "1" ]]; then
 mpirun -np ${NSLOTS} octopus > $name.out
 else
 octopus > $name.out
 fi
 
-cp -pr * $basedir/.
-
 echo 'Normal termination of:' ${JOB_ID} >> $jobfile
+cp -pr * $basedir/.
 
 if [[ $delscratch -eq "true" ]];then
   cd ../

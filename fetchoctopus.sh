@@ -2,16 +2,17 @@
 # Simple script that fetches data from scratch to the current working directory.
 # Expects the presence of file job.log created by r.abin.
 
-if [[ ! -e *.log ]];then
+if [[ ! -e job.log ]];then
    echo "ERROR: no file .log does not exist. Exiting now..."
    exit 1
 fi
 
-NODE=$(head -3 job.log)
-JOB=$(tail -4 job.log)
-KAM=$(tail -5 job.log)
+NODE=$(head -3 job.log | tail -1 )
+FROM=$(head -4 job.log | tail -1)
+KAM=$(head -5 job.log  | tail -1)
 
 # copy all data from scratch if it is newer (-u switch)
 # and preserve the timestamps (-p switch)
-ssh -n $NODE "cp -r -u -p $JOB/* $KAM"
+ssh -n $NODE "cp -r -u $FROM/* $KAM/. "
+
 
