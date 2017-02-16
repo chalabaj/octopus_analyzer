@@ -23,7 +23,7 @@ if [[ -d $SCRATCH ]];then
    exit 1
 else
    mkdir ${SCRATCH}
-   cp -p * $SCRATCH/.
+   cp -pr * $SCRATCH/.
    cp /home/chalabaj/skripty/octopus_analyzer/fetchoctopus.sh $basedir/.
 fi
 
