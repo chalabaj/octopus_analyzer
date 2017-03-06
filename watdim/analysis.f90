@@ -22,7 +22,7 @@
  INTEGER, intent(out)          :: channel,dissH,dissmolH,ho1,ho2  ! output vars
  INTEGER                       :: Ndiss_H,h1,h2,diss_molH,hh,h_o1,h_o2
  INTEGER, allocatable          :: diss_H_at(:)
- REAL*8, parameter             :: OH_bond_dist = 2.000 ,OO_bond_dist = 4.000, H_diss_limit = 3.000
+ REAL*8, parameter             :: OH_bond_dist = 2.000 ,OO_bond_dist = 4.500, H_diss_limit = 3.000
  REAL*8, parameter             :: HH_bond_dist = 1.5
   
 ! WAT DIM ANALYSIS at each timestep
