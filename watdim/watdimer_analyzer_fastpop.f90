@@ -31,9 +31,11 @@
  ! Error handling--------------------------------------------------------------
  Nargs=command_argument_count()
  call get_command_argument(1, mode)
-   if ( Nargs.LT.2 )then
+  if (mode.EQ.'-st')then
+ GOTO 12
+ else if ( Nargs.LT.2 )then
      call Print_help(1,'')
-   end if
+ end if
 
 
 !Reading input files-----------------------------------------------------------
@@ -123,7 +125,8 @@
   end do
 
 !-----calling stastics----------------
-   print *,'processing populations'
+
+12   print *,'processing populations'
    
    command='wc -l <' // outputfile // '> outlines.txt'
     CALL system(command)
