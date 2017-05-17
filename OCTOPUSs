@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#$ -cwd -V
+#$ -notify
+
+name=$1
+jobfile=job.log
+delscratch="true"
+
+export basedir=$PWD
+export scrdir="/scratch/${USER}"
+export SCRATCH=$scrdir/${JOB_ID}
+
+echo  ${JOB_ID}     > $jobfile
+echo  ${USER}       >>  $jobfile
+echo  ${HOSTNAME}   >>  $jobfile
+echo  ${SCRATCH}    >>  $jobfile
+echo  $basedir      >>  $jobfile
+echo 'NSLOTS: '${NSLOTS} >>  $jobfile   #NSLOTS
+echo "testing paralell">>  $jobfile 
+
+if [[ -d $SCRATCH ]];then
+   echo "Job direcory $SCRDIR already exist!"
+   echo "Exiting..."
+   exit 1
+else
+   mkdir ${SCRATCH}
+   cp -r * $SCRATCH/.
+   cp /home/chalabaj/skripty/octopus_analyzer/fetchoctopus.sh $basedir/.
+fi
+
+cd $SCRATCH
+
+function clean_scratch {
+echo "Job stopped after qdel ${JOB_ID}">> $jobfile
+echo "Copying current data from $SCRATCH to $basedir/">> $jobfile
+cp $name.out $basedir/.
+cp -r td.general $basedir/.
+echo "copied, removed scratch, exit...." >> $jobfile
+rm -r $SCRATCH
+exit 1
+} 
+
+trap clean_scratch SIGUSR2 #if qdel JOBID then copy current data to basedir
+
+# 
+if [[ ${NSLOTS} -gt "1" ]]; then
+wchii=$(which mpirun)
+echo $wchii >> $jobfile
+mpiexec  -np ${NSLOTS}  octopus > $name.out 
+else
+octopus > $name.out
+fi
+
+echo 'Normal termination of:' ${JOB_ID} >> $jobfile
+cp -r * $basedir/.
+
+if [[ $delscratch -eq "true" ]];then
+  cd ../
+  rm -r $SCRATCH
+fi
