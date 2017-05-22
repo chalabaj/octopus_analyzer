@@ -55,7 +55,7 @@ source $octopuslibs
 #$ -cwd
 #$ -e .
 #$ -o .
-#$ -pe mpi $nproc 
+#$ -pe shm $nproc 
 #$ -notify
 
 export OMP_NUM_THREADS=1

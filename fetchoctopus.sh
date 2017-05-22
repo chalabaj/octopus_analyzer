@@ -8,11 +8,13 @@ if [[ ! -e job.log ]];then
 fi
 
 NODE=$(head -3 job.log | tail -1 )
+echo $NODE
 FROM=$(head -4 job.log | tail -1)
+echo $FROM
 KAM=$(head -5 job.log  | tail -1)
-
+echo $KAM
 # copy all data from scratch if it is newer (-u switch)
 # and preserve the timestamps (-p switch)
-ssh -n $NODE "cp -r -u $FROM/* $KAM/. "
+ssh $NODE -n  "cp -r -u -p $FROM/* $KAM/"
 
 

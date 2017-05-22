@@ -43,11 +43,10 @@ exit 1
 
 trap clean_scratch SIGUSR2 #if qdel JOBID then copy current data to basedir
 
-# 
-if [[ ${NSLOTS} -gt "1" ]]; then
+if [[ "${NSLOTS}" -gt "1" ]]; then
 wchii=$(which mpirun)
 echo $wchii >> $jobfile
-mpiexec  -np ${NSLOTS}  octopus > $name.out 
+mpirun -np ${NSLOTS} octopus > $name.out 
 else
 octopus > $name.out
 fi
