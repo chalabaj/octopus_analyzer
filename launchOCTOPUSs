@@ -43,7 +43,7 @@ fi
 #$ -pe mpi $nproc 
 #required libraries for OCTOPUS
 export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
-source $octopuslibs
+#source $octopuslibs
 which mpirun
 #parallelization
 if [[ $nproc -gt "1" ]]; then

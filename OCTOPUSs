@@ -53,8 +53,9 @@ fi
 
 echo 'Normal termination of:' ${JOB_ID} >> $jobfile
 cp -r * $basedir/.
-
+cp $name.out $basedir/.
+cp -r td.general $basedir/.
 if [[ $delscratch -eq "true" ]];then
   cd ../
-  rm -r $SCRATCH
+
 fi
