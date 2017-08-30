@@ -1,11 +1,10 @@
  MODULE ANALYSIS
  IMPLICIT NONE
  CONTAINS
- 
  SUBROUTINE Print_help(err,errfile)
  IMPLICIT  NONE
  integer :: err
- CHARACTER(200) :: errfile
+ CHARACTER(1000) :: errfile
  
  if (err.EQ.1) then
           write(*,*)'No file to be analyzed or -s -a missing.'
