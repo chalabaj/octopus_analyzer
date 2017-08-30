@@ -37,7 +37,7 @@
         do hh=2,Natoms,1   ! 1 is oxygen atom
           if ( dist(1,hh).gt.H_diss_limit.AND.dist(2,3).gt.HH_bond_dist ) then
             diss_H = diss_H + 1
-            diss_H_at(dissH) = hh          ! which H(hh) is dissociated
+            diss_H_at(diss_H) = hh          ! which H(hh) is dissociated
           ! if not dissociated then where the hydrogen is? O1 or O2 1
           end if
         end do
