@@ -1,0 +1,91 @@
+#!/bin/bash
+
+function PrintHelp {
+   echo " "
+   echo "USAGE: 'launchOCTOPUS inputfile nproc' "
+   exit 1
+}
+
+if [[ $# -lt "2" ]]; then
+   echo "Not enough parameters."
+   PrintHelp
+fi
+
+input=$1
+cp /home/chalabaj/skripty/octopus_analyzer/fetchoctopus.sh .
+#save data before restart
+mkdir old
+cp td.out old/.
+cp -r td.general old/.
+cp -r restart old/.
+cp job.log old/.
+
+#file handling
+if [[ ! -e "$input" ]];then
+   echo "File $input does not exist. Exiting."
+   PrintHelp
+fi
+cp $input inp                                     #octopus requires inp file in cwd
+name=`echo "$input" | cut -d'.' -f1`              #namefile without extenson
+
+nproc=$2
+if ! [[ $nproc =~ ^[1-9]+$ ]] ; then
+   echo "error: Nproc is not an integer number" 
+   PrintHelp
+fi
+
+#which queue
+cluster=$(uname -a | awk {'print $2'})
+
+if [ "$cluster" = "as67-1" ]; then
+   queue='sq-8-16'
+elif [ "$cluster" == "403-a324-01" ]; then
+   queue='aq'
+elif [ "$cluster" = "403-as67-01" ]; then
+   queue='nq'
+fi
+
+#queue=$3
+#required libraries for OCTOPUS
+export octopuslibs=/home/chalabaj/prog/octopus/Octopus_environment.sh
+source $octopuslibs
+
+#parallelization
+if [[ $nproc -gt "1" ]]; then
+cat > r.$name << EOF
+#!/bin/bash
+
+#$ -pe shm $nproc 
+#$ -cwd
+#$ -V
+#$ -e .
+#$ -o .
+#$ -notify
+export OMP_NUM_THREADS=1  
+
+./OCTOPUSs $name
+EOF
+
+echo "Launching parallel OCTOPUS 6.0 job for $input using $nproc processors."
+echo "Results will be saved to $name.out, JOB information in $name.log"
+echo "qsub -cwd -V -q $queue -pe mpi $nproc r.$name"
+echo "-----------------------------------------"
+qsub -cwd -V -q $queue -pe mpi $nproc  r.$name
+
+  else 
+cat > r.$name << EOF
+#!/bin/bash
+
+#$ -V
+#$ -cwd
+#$ -e .
+#$ -notify
+./OCTOPUSs $name
+EOF
+echo "Launching OCTOPUS 6.0 job for $input using $nproc processor(s)."
+echo "Results will be saved to $name.out."
+echo "qsub -cwd -q $queue r.$name"
+echo "-----------------------------------------"
+qsub -cwd -V -q $queue r.$name
+fi
+

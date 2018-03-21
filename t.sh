@@ -1,0 +1,3 @@
+
+KDE=`pwd`
+echo $KDE
